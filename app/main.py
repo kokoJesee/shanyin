@@ -6,8 +6,10 @@ import os
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
+from pydantic_core import ValidationError as CoreValidationError
 
 from .agent_service import run_agent
 from .render_service import render_arrangement, resolve_local_file
@@ -35,12 +37,26 @@ async def agent_endpoint(payload: AgentRequest) -> dict[str, Any]:
 @app.post("/api/v1/render", response_model=RenderResponse)
 async def render_endpoint(payload: RenderRequest, request: Request) -> RenderResponse:
     try:
-        result = render_arrangement(payload.arrangement, payload.accompanimentGain, str(request.base_url))
+        # 用 PUBLIC_BASE_URL 环境变量强制 https，避免云托管 Host header 给出 http://
+        public_base_url = os.getenv("PUBLIC_BASE_URL") or f"https://{request.headers.get('host', request.url.netloc)}"
+        result = render_arrangement(payload.arrangement, payload.accompanimentGain, public_base_url)
         logger.info("render request_id=%s status=ok duration=%.2f", payload.requestId, payload.arrangement.duration)
         return result
+    except ValidationError as exc:
+        # 422 时打印完整 payload + 错误详情，CloudBase 日志可直接看到错哪个字段
+        logger.warning("render 422 request_id=%s errors=%s payload=%s", payload.requestId, exc.errors(), payload.model_dump())
+        raise HTTPException(status_code=422, detail=exc.errors()) from exc
     except Exception as exc:
         logger.exception("render request_id=%s status=failed", payload.requestId)
         raise HTTPException(status_code=503, detail="render unavailable") from exc
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """FastAPI 在 Pydantic 校验失败时也会走这里，把 detail 写到日志"""
+    logger.warning("global 422 errors=%s body=%s", exc.errors(), (await request.body()).decode("utf-8", errors="replace")[:2000])
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
 @app.get("/api/v1/render/files/{file_id}")
