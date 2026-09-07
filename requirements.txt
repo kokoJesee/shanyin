@@ -1,0 +1,9 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+agentscope==1.0.11
+openai==2.53.0
+pydantic==2.11.7
+numpy==2.2.6
+lameenc==1.8.1
+cos-python-sdk-v5==1.9.38
+httpx==0.28.1
