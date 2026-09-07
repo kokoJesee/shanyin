@@ -1,0 +1,14 @@
+Salamander Grand Piano V3 sample subset
+Author: Alexander Holm
+Instrument: Yamaha C5 grand piano
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+Original source: https://github.com/sfzinstruments/SalamanderGrandPiano
+
+The MP3 files are the velocity-15 conversions from
+@audio-samples/piano-mp3-velocity15, mirrored through jsDelivr:
+https://www.npmjs.com/package/@audio-samples/piano-mp3-velocity15
+
+This project bundles 30 pitch-spaced samples from A0 to C8 for
+offline browser playback. Notes between samples are retuned by playback rate;
+this is not a full multi-velocity piano library.
+

@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from .agent_service import run_agent
@@ -17,6 +19,10 @@ from .schemas import AgentRequest, RenderRequest, RenderResponse
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("shanyin")
 app = FastAPI(title="Shanyin CloudRun API", version="1.0.0", docs_url=None, redoc_url=None)
+
+ASSET_DIR = Path(__file__).resolve().parent / "assets"
+if ASSET_DIR.is_dir():
+    app.mount("/api/v1/assets", StaticFiles(directory=str(ASSET_DIR)), name="assets")
 
 
 @app.get("/health")
